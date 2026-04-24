@@ -101,20 +101,32 @@ def check_shifts(access_token: str):
 
     elif resp.status_code == 200:
         try:
-            data        = resp.json()
+            data = resp.json()
             shift_count = len(data) if isinstance(data, list) else "?"
-            preview     = json.dumps(data, indent=2, ensure_ascii=False)[:600]
+            lines = []
+            for s in data:
+                start_raw = s.get("start", "")
+                duration  = s.get("durationInMinutes", 0)
+                # parse and convert to local time (UTC+2 Munich summer)
+                from datetime import datetime, timezone, timedelta
+                dt_utc  = datetime.fromisoformat(start_raw.replace("+00:00", "+00:00"))
+                dt_local = dt_utc + timedelta(hours=2)
+                date_str = dt_local.strftime("%a %d.%m.%Y")
+                time_str = dt_local.strftime("%H:%M")
+                end_str  = (dt_local + timedelta(minutes=duration)).strftime("%H:%M")
+                lines.append(f"📦 {date_str}  {time_str} - {end_str}  ({duration//60}h)")
+            shifts_text = "\n".join(lines)
         except Exception:
             shift_count = "?"
-            preview     = resp.text[:600]
+            shifts_text = resp.text[:300]
 
         send_telegram(
-            f"SCHICHT VERFUGBAR! ({shift_count} slot(s))\n\n"
-            f"Go grab it: https://portal.flaschenpost.de\n\n"
-            f"Details:\n{preview}"
+            f"🚨 {shift_count} SHIFT(S) AVAILABLE!\n\n"
+            f"{shifts_text}\n\n"
+            f"👉 portal.flaschenpost.de"
         )
         print(f"SHIFTS FOUND ({shift_count}) - Telegram sent!")
-
+        
     else:
         print(f"Unexpected status {resp.status_code}: {resp.text[:200]}")
 
