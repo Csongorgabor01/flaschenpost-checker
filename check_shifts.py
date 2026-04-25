@@ -108,7 +108,6 @@ def check_shifts(access_token: str):
                 start_raw = s.get("start", "")
                 duration  = s.get("durationInMinutes", 0)
                 # parse and convert to local time (UTC+2 Munich summer)
-                from datetime import datetime, timezone, timedelta
                 dt_utc  = datetime.fromisoformat(start_raw.replace("+00:00", "+00:00"))
                 dt_local = dt_utc + timedelta(hours=2)
                 date_str = dt_local.strftime("%a %d.%m.%Y")
